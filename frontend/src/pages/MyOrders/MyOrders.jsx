@@ -222,7 +222,7 @@ const MyOrders = () => {
                   >
                     View Details
                   </Button>
-                  {(order.orderStatus === 'Pending') && (
+                  {(order.orderStatus === 'Pending' && order.paymentStatus !== 'Completed') && (
                     <Button
                       className="mt-4 w-full bg-red-600 text-white"
                       onClick={() => cancelOrder(order._id)}

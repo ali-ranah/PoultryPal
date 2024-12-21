@@ -18,6 +18,7 @@ const OrderRoutes = require('./Routes/Order/OrderRoutes');
 const RefundRoutes = require('./Routes/Refund/RefundRoutes');
 const ScheduleRoutes = require('./Routes/Schedule/ScheduleRoutes');
 const AnnouncementRoutes = require('./Routes/Announcements/Announcements');
+const PaymentRoutes = require('./Routes/Payment/Payment');
 
 
 
@@ -57,7 +58,7 @@ app.use('/api/refunds', RefundRoutes);
 app.use('/api/schedule', ScheduleRoutes);
 app.use('/api/announcements', AnnouncementRoutes);
 app.use('/files', express.static(path.join(__dirname, 'uploads')));
-
+app.use('/api/payment', PaymentRoutes);
 
 
 

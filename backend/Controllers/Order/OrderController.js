@@ -2,39 +2,47 @@ const Order = require('../../Models/Order/OrderModel');
 const CartController = require('../../Controllers/Cart/CartController');
 const sendEmail = require('../../mail/sendEmail');
 
-// Create a New Order
+
 exports.createOrder = async (req, res) => {
-  const { products,address,city,zipcode,phoneNumber, totalPrice, paymentMethod } = req.body;
+  const { products, address, city, zipcode, phoneNumber, totalPrice, paymentMethod, paymentIntentId } = req.body;
   const userId = req.user._id;
   const userEmail = req.user.email;
 
   try {
-    const formattedProducts = products.map((product) => ({
-      productId: product.product, 
-      quantity: product.quantity, 
-      price: product.product.price,
-    }));
-    const newOrder = new Order({
-      user: userId,
-      products:formattedProducts,
-      address,
-      city,
-      zipcode,
-      phoneNumber,
-      totalPrice,
-      paymentMethod,
-      orderDate: Date.now()
-    });
+      // Check payment status if payment method is Debit Card
+      let paymentStatus = "Pending";
+      if (paymentMethod === "Debit Card") {
+              paymentStatus = "Completed";
+      }
 
-    await newOrder.save();
-    await CartController.clearCartInternal(userEmail);;
-    res.status(201).json({ message: 'Order created successfully', order: newOrder });
+      const formattedProducts = products.map((product) => ({
+          productId: product.product,
+          quantity: product.quantity,
+          price: product.product.price,
+      }));
+
+      const newOrder = new Order({
+          user: userId,
+          products: formattedProducts,
+          address,
+          city,
+          zipcode,
+          phoneNumber,
+          totalPrice,
+          paymentMethod,
+          paymentStatus,
+          orderDate: Date.now(),
+      });
+
+      await newOrder.save();
+      await CartController.clearCartInternal(userEmail);
+
+      res.status(201).json({ message: 'Order created successfully', order: newOrder });
   } catch (error) {
-    console.error('Error creating order:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
+      console.error('Error creating order:', error);
+      res.status(500).json({ message: 'Internal Server Error' });
   }
 };
-
 // Fetch All Orders
 exports.getAllOrders = async (req, res) => {
   try {

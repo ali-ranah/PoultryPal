@@ -19,12 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import toast from 'react-hot-toast';
 import { AxiosRequest } from '../../AxiosRequest/AxiosRequest';
 import { useSelector } from "react-redux";
@@ -50,7 +44,110 @@ export default function CheckoutCard() {
   const token = useSelector(selectToken) || storedToken;
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);  // State to control dialog
+  const [status, setStatus] = useState(null);  // Payment status
+  const [isOrderSubmitted, setIsOrderSubmitted] = useState(false); // To track if the order is submitted
 
+
+  useEffect(() => {
+    // Check if there are saved order details in localStorage
+    const savedOrderDetails = localStorage.getItem('orderDetails');
+    
+    if (savedOrderDetails) {
+      const { cartData: savedCartData, formData: savedFormData, paymentMethod: savedPaymentMethod } = JSON.parse(savedOrderDetails);
+      
+      // Restore cartData, formData, and paymentMethod from localStorage
+      setCartData(savedCartData);
+      setFormData(savedFormData);
+      setPaymentMethod(savedPaymentMethod);
+  
+      // Clear the saved data from localStorage after it's retrieved
+      localStorage.removeItem('orderDetails');
+    }
+  }, []);
+
+  useEffect(() => {
+    // Check if the URL has 'payment-cancelled' parameter without any value
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const paymentCancelled = urlParams.has('payment-cancelled');  // Check if 'payment-cancelled' exists
+  
+    // If 'payment-cancelled' is present, clear the local storage
+    if (paymentCancelled) {
+      localStorage.removeItem('orderDetails');
+      // setFormData(
+      //   {
+      //     address: '',
+      //     city: '',
+      //     zipcode: '',
+      //     phoneNumber: '',
+      //   }
+      // );
+      setPaymentMethod("");
+      console.log("Order details removed from localStorage due to payment cancellation");
+    }
+  }, []);
+  
+  
+
+  useEffect(() => {
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const sessionId = urlParams.get('session_id');
+  
+    if (sessionId) {
+      AxiosRequest.get(`/api/payment/session-status?session_id=${sessionId}`,{
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+        .then((response) => {
+          const { status} = response.data;
+          setStatus(status);
+        })
+        .catch((error) => {
+          console.error('Error fetching session status:', error);
+          // toast.error(error.response.data.message);
+        });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (status === 'complete' && !isOrderSubmitted) {
+      const sessionId = new URLSearchParams(window.location.search).get('session_id');
+      
+      if (sessionId) {
+        // First, call complete session
+        completeSession(sessionId).then(() => {
+          // After completing the session, handle the order submission
+          if (cartData.products.length > 0 && formData.address && formData.city && formData.zipcode && formData.phoneNumber && paymentMethod) {
+            handleSubmitOrder(); // Submit the order after the session is complete
+            setIsOrderSubmitted(true); // Mark the order as submitted
+          } else {
+            return;
+          }
+        });
+      } else {
+        toast.error("Session ID not found!");
+      }
+    }
+  }, [status, cartData, formData, paymentMethod,isOrderSubmitted]);
+  
+  // The completeSession function can be modified to return a promise
+  const completeSession = async (sessionId) => {
+    try {
+      const response = await AxiosRequest.post('/api/payment/complete-session', {
+        session_id: sessionId,
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      console.log('Session completed:', response.data.message);
+    } catch (error) {
+      console.error('Error completing session:', error.response.data.message);
+      toast.error(error.response.data.message);
+    }
+  };
 
   useEffect(() => {
     const fetchCartData = async () => {
@@ -67,8 +164,8 @@ export default function CheckoutCard() {
 
     fetchCartData();
   }, [email]);
-  console.log('Cart Data in checkout',cartData);
 
+  
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     setFormData({ ...formData, [id]: value });
@@ -86,7 +183,6 @@ export default function CheckoutCard() {
       toast.error('Please fill in all the fields.');
       return;
     }
-
     try {
       const response = await AxiosRequest.post('/api/orders/create-order', {
         products: cartData.products,
@@ -112,11 +208,44 @@ export default function CheckoutCard() {
         }
       );
       setDialogOpen(true);
+      
     } catch (error) {
       console.error('Error creating order:', error);
       toast.error('Failed to create the order');
     }
   };
+
+  const handlePaymentWithStripe = async()=>{
+    // Save cart data and form data to localStorage
+    const { address, city, zipcode,phoneNumber } = formData;
+    if ( !address || !city || !zipcode || !phoneNumber || !paymentMethod) {
+      toast.error('Please fill in all the fields.');
+      return;
+    }
+  localStorage.setItem('orderDetails', JSON.stringify({
+    cartData,
+    formData,
+    paymentMethod,
+  }));
+    const sessionResponse = await AxiosRequest.post('/api/payment/create-checkout-session', {
+      amount: cartData.totalPrice,
+    },{
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const { sessionId } = sessionResponse.data;
+
+    // Redirect to the Stripe Checkout page
+    const stripe = window.Stripe("pk_test_51QY8ceGjkBvIbb1t44yllQOTlsvJ80ErOy1BXV3s4LIRVJEYnWwY10MY5Hmj8K2waRSEXkOlqwr5TSxO6fDqG5nn00PAMYNaIc"); // Your Stripe public key
+    const { error } = await stripe.redirectToCheckout({ sessionId });
+
+    if (error) {
+      console.error('Error redirecting to Stripe Checkout:', error);
+      toast.error('Payment failed. Please try again.');
+    }
+  }
 
   const handleCancel =()=>{
     navigate('/cart');
@@ -142,10 +271,6 @@ export default function CheckoutCard() {
       <CardContent>
         <form>
           <div className="grid w-full items-center gap-4">
-            {/* <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="name">Full Name</Label>
-              <Input id="fullname" placeholder="John Doe" value={formData.fullname} onChange={handleInputChange}/>
-            </div> */}
             <div className="flex flex-col space-y-1.5">
               <Label htmlFor="address">Address</Label>
               <Input id="address" placeholder="123 Main St" value={formData.address} onChange={handleInputChange}/>
@@ -185,42 +310,7 @@ export default function CheckoutCard() {
                   <SelectValue placeholder="Select payment method" />
                 </SelectTrigger>
                 <SelectContent position="popper">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div>
-                          <SelectItem value="Credit Card" disabled>Credit Card</SelectItem>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Only cash is accepted at the moment</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div>
-                          <SelectItem value="Mobile Account" disabled>Mobile Account</SelectItem>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Only cash is accepted at the moment</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div>
-                          <SelectItem value="Bank Transfer" disabled>Bank Transfer</SelectItem>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Only cash is accepted at the moment</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <SelectItem value="Debit Card">Debit Card</SelectItem>
                   <SelectItem value="Cash">Cash</SelectItem>
                 </SelectContent>
               </Select>
@@ -230,7 +320,11 @@ export default function CheckoutCard() {
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button variant="outline" onClick={handleCancel}>Cancel</Button>
-        <Button disabled={paymentMethod !== "Cash"} onClick={handleSubmitOrder}>Complete Order</Button>
+        {paymentMethod === "Debit Card" ? (
+    <Button onClick={handlePaymentWithStripe}>Go to Payment</Button> // Show "Go to Payment" button for Debit Card
+  ) : (
+    <Button disabled={!paymentMethod} onClick={handleSubmitOrder}>Complete Order</Button> // Show "Complete Order" button for other payment methods
+  )}
       </CardFooter>
     </Card>
     </motion.div>

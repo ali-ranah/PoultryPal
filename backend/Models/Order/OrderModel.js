@@ -14,7 +14,7 @@ const orderSchema = new mongoose.Schema({
   totalPrice: { type: Number, required: true },
   orderStatus: { type: String, enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Canceled'], default: 'Pending' },
   orderDate: { type: Date, default: Date.now },
-  paymentMethod: { type: String, enum: ['Credit Card', 'Mobile Account', 'Bank Transfer','Cash'], required: true },
+  paymentMethod: { type: String, enum: ['Debit Card','Cash'], required: true },
   paymentStatus: { type: String, enum: ['Pending', 'Completed', 'Failed'], default: 'Pending' },
   refundRequest: {
     type: String,
