@@ -40,10 +40,11 @@ exports.getAllRefunds = async (req, res) => {
   .populate('user', 'firstName lastName email image')
   .populate({
     path: 'orderId',
+    select: 'sessionId address city zipcode totalPrice products',
     populate: {
       path: 'products.productId',
       model: 'product', // Ensure you reference the Product model
-      select: 'name price quantity image', // Select relevant fields from Product model
+      select: 'name price image', // Select relevant fields from Product model
     }
   });
 

@@ -102,3 +102,47 @@ exports.completeSession = async (req, res) => {
     res.status(500).json({ message: 'Error updating session status' });
   }
 };
+
+// Refund a payment session
+exports.refundSession = async (req, res) => {
+  const { session_id } = req.body; // Expecting session_id in the request body
+console.log('session_id:', session_id);
+  try {
+    // Retrieve the session from the database
+    const storedSession = await Session.findOne({ sessionId: session_id });
+
+    if (!storedSession) {
+      return res.status(400).json({ message: 'Session not found' });
+    }
+
+    // Check if the session is completed
+    if (storedSession.status !== 'completed') {
+      return res.status(400).json({ message: 'Refunds are only allowed for completed sessions' });
+    }
+
+    // Retrieve the payment intent from the Stripe session
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+    const paymentIntentId = session.payment_intent;
+
+    if (!paymentIntentId) {
+      return res.status(400).json({ message: 'Payment intent not found for the session' });
+    }
+
+    // Create a refund
+    const refund = await stripe.refunds.create({
+      payment_intent: paymentIntentId,
+    });
+
+    // Update the session status to 'refunded' in your database
+    storedSession.status = 'refunded';
+    await storedSession.save();
+
+    res.status(200).json({
+      message: 'Refund processed successfully',
+      refund,
+    });
+  } catch (error) {
+    console.error('Error processing refund:', error);
+    res.status(500).json({ message: 'Error processing refund' });
+  }
+};

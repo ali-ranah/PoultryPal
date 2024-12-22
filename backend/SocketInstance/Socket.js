@@ -1,26 +1,3 @@
-// const socketIo = require('socket.io');
-
-// let io;
-
-// const initializeSocket = (server) => {
-//   io = socketIo(server, {
-//     cors: {
-//       origin: '*',
-//       methods: ['GET', 'POST'],
-//     },
-//   });
-// };
-
-// const getIoInstance = () => {
-//   if (!io) {
-//     throw new Error('Socket.io not initialized!');
-//   }
-//   return io;
-// };
-
-// module.exports = { initializeSocket, getIoInstance };
-
-
 const socketIo = require('socket.io');
 const CartModel = require('../Models/Cart/CartModel');
 const Announcement = require('../Models/Announcement/Announcement');

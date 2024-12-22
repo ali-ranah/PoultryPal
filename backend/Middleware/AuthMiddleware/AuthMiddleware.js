@@ -4,7 +4,7 @@ const authMiddleware = (req, res, next) => {
   // Extract the token from the Authorization header
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1]; // Check if authHeader is defined before splitting
-
+console.log(token);
   if (!token) {
     return res.status(401).json({ message: 'Authentication failed! No token provided.' });
   }

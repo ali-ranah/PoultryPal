@@ -109,24 +109,63 @@ if (!isAdmin) {
     setDialogOpen(true);
   };
 
+  // const handleUpdateRefundStatus = async () => {
+  //   setUpdatingRefund(true); 
+  //   try {
+  //     await AxiosRequest.patch(`/api/refunds/update/${selectedRefund._id}`, { status: newRefundStatus }, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
+  //     toast.success('Refund status updated successfully');
+  //     handleDialogClose();
+  //     fetchRefunds(); // Refresh the refunds list after the update
+  //   } catch (error) {
+  //       console.error(error);
+  //     toast.error(error.response?.data?.msg || 'Failed to update refund status');
+  //   } finally {
+  //       setUpdatingRefund(false); 
+  //     }
+  // };
+
   const handleUpdateRefundStatus = async () => {
-    setUpdatingRefund(true); 
+    setUpdatingRefund(true);
     try {
-      await AxiosRequest.patch(`/api/refunds/update/${selectedRefund._id}`, { status: newRefundStatus }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      if (newRefundStatus === 'Completed') {
+        // Step 1: Call refundSession API
+        await AxiosRequest.post(
+          `/api/payment/refund-session`,
+          { session_id: selectedRefund.orderId.sessionId }, // Adjust according to your API's requirements
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        toast.success('Refund session processed successfully');
+      }
+  
+      // Step 2: Update refund status
+      await AxiosRequest.patch(
+        `/api/refunds/update/${selectedRefund._id}`,
+        { status: newRefundStatus },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       toast.success('Refund status updated successfully');
       handleDialogClose();
       fetchRefunds(); // Refresh the refunds list after the update
     } catch (error) {
-        console.error(error);
-      toast.error(error.response?.data?.msg || 'Failed to update refund status');
+      console.error(error);
+      toast.error(error.response?.data?.msg || 'Failed to process the refund');
     } finally {
-        setUpdatingRefund(false); 
-      }
+      setUpdatingRefund(false);
+    }
   };
+  
 
   if (loading) {
     return (

@@ -4,7 +4,7 @@ const sendEmail = require('../../mail/sendEmail');
 
 
 exports.createOrder = async (req, res) => {
-  const { products, address, city, zipcode, phoneNumber, totalPrice, paymentMethod, paymentIntentId } = req.body;
+  const { products, address, city, zipcode, phoneNumber, totalPrice, paymentMethod, sessionId } = req.body;
   const userId = req.user._id;
   const userEmail = req.user.email;
 
@@ -31,6 +31,7 @@ exports.createOrder = async (req, res) => {
           totalPrice,
           paymentMethod,
           paymentStatus,
+          sessionId: paymentMethod === "Debit Card" ? sessionId : undefined,
           orderDate: Date.now(),
       });
 

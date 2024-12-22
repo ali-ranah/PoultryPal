@@ -46,6 +46,7 @@ export default function CheckoutCard() {
   const [dialogOpen, setDialogOpen] = useState(false);  // State to control dialog
   const [status, setStatus] = useState(null);  // Payment status
   const [isOrderSubmitted, setIsOrderSubmitted] = useState(false); // To track if the order is submitted
+  const [sessionId, setSessionId] = useState('');
 
 
   useEffect(() => {
@@ -114,23 +115,47 @@ export default function CheckoutCard() {
   useEffect(() => {
     if (status === 'complete' && !isOrderSubmitted) {
       const sessionId = new URLSearchParams(window.location.search).get('session_id');
-      
+  
       if (sessionId) {
-        // First, call complete session
-        completeSession(sessionId).then(() => {
-          // After completing the session, handle the order submission
-          if (cartData.products.length > 0 && formData.address && formData.city && formData.zipcode && formData.phoneNumber && paymentMethod) {
-            handleSubmitOrder(); // Submit the order after the session is complete
-            setIsOrderSubmitted(true); // Mark the order as submitted
-          } else {
-            return;
-          }
-        });
+        completeSession(sessionId); // Only sets sessionId
       } else {
-        toast.error("Session ID not found!");
+        toast.error('Session ID not found!');
       }
     }
-  }, [status, cartData, formData, paymentMethod,isOrderSubmitted]);
+  }, [status, isOrderSubmitted]);
+  
+
+  // useEffect(() => {
+  //   if (status === 'complete' && !isOrderSubmitted) {
+  //     const sessionId = new URLSearchParams(window.location.search).get('session_id');
+      
+  //     if (sessionId) {
+  //       // First, call complete session
+  //       completeSession(sessionId).then(() => {
+  //         // After completing the session, handle the order submission
+  //         if (cartData.products.length > 0 && formData.address && formData.city && formData.zipcode && formData.phoneNumber && paymentMethod) {
+  //           handleSubmitOrder(); // Submit the order after the session is complete
+  //           setIsOrderSubmitted(true); // Mark the order as submitted
+  //         } else {
+  //           return;
+  //         }
+  //       });
+  //     } else {
+  //       toast.error("Session ID not found!");
+  //     }
+  //   }
+  // }, [status, cartData, formData, paymentMethod,isOrderSubmitted]);
+
+  useEffect(() => {
+    if (sessionId && status === 'complete' && !isOrderSubmitted) {
+      // Proceed to handle the order only if sessionId is set
+      if (cartData.products.length > 0 && formData.address && formData.city && formData.zipcode && formData.phoneNumber && paymentMethod) {
+        handleSubmitOrder();
+        setIsOrderSubmitted(true); // Mark the order as submitted
+      }
+    }
+  }, [sessionId, status, cartData, formData, paymentMethod, isOrderSubmitted]);
+  
   
   // The completeSession function can be modified to return a promise
   const completeSession = async (sessionId) => {
@@ -143,6 +168,7 @@ export default function CheckoutCard() {
         },
       });
       console.log('Session completed:', response.data.message);
+      setSessionId(sessionId);
     } catch (error) {
       console.error('Error completing session:', error.response.data.message);
       toast.error(error.response.data.message);
@@ -183,6 +209,11 @@ export default function CheckoutCard() {
       toast.error('Please fill in all the fields.');
       return;
     }
+      // Ensure sessionId is set for Debit Card payment method
+  if (paymentMethod === 'Debit Card' && !sessionId) {
+    toast.error('Session ID is required for Debit Card payments. Please complete the payment process.');
+    return;
+  }
     try {
       const response = await AxiosRequest.post('/api/orders/create-order', {
         products: cartData.products,
@@ -191,7 +222,8 @@ export default function CheckoutCard() {
         zipcode,
         phoneNumber,
         totalPrice: cartData.totalPrice,
-        paymentMethod
+        paymentMethod,
+        sessionId
       },{
         headers: {
           'Authorization': `Bearer ${token}`,

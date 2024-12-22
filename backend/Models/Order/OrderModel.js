@@ -16,6 +16,7 @@ const orderSchema = new mongoose.Schema({
   orderDate: { type: Date, default: Date.now },
   paymentMethod: { type: String, enum: ['Debit Card','Cash'], required: true },
   paymentStatus: { type: String, enum: ['Pending', 'Completed', 'Failed'], default: 'Pending' },
+  sessionId: { type: String },
   refundRequest: {
     type: String,
     enum: ['Not Started', 'Requested', 'Approved', 'Denied', 'Processing', 'Completed'],

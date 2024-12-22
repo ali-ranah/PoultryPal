@@ -197,6 +197,16 @@ const MyOrders = () => {
                 transition={{ duration: 0.5 }}
               >
                 <Card className="p-6 flex flex-col gap-1 items-center text-center bg-white shadow-lg shadow-black rounded-lg transform transition duration-300 hover:-translate-y-2 hover:shadow-3xl">
+                {order.refundRequest === 'Completed' && (
+              <div className="absolute top-0 left-0 bg-green-500 text-white px-3 py-1 rounded-br-lg">
+                Refunded
+              </div>
+            )}
+            {order.orderStatus === 'Canceled' && (
+              <div className="absolute top-0 left-0 bg-blue-500 text-white px-3 py-1 rounded-br-lg">
+                Canceled
+              </div>
+            )}
                   <Avatar
                     src={order.user?.image}
                     alt={`${order.user?.firstName} ${order.user?.lastName}`}
