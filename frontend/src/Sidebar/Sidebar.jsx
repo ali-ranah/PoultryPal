@@ -4,11 +4,6 @@ import { RiRefund2Line } from "react-icons/ri";
 import { IoCalendarOutline ,IoCalendarClearOutline} from "react-icons/io5";
 import { GrAnnounce } from "react-icons/gr";
 import { GiChicken,GiHighGrass } from "react-icons/gi";
-
-
-
-
-
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch} from 'react-redux';
 
@@ -33,6 +28,8 @@ console.log('User Role in Sidebar', userRole);
     userRole === 'Admin' ? { name: 'Create Schedule', path: '/create-schedule', icon: <IoCalendarClearOutline /> }:null,
     userRole === 'Admin' ? { name: 'All Schedules', path: '/all-schedules', icon: <IoCalendarOutline /> }:null,
     userRole === 'Admin' ? { name: 'Announcement', path: '/create-announcement', icon: <GrAnnounce /> }:null,
+    userRole === 'Admin' ? { name: 'Add Supplier', path: '/add-supplier', icon: <FaReceipt /> }:null,
+    userRole === 'Admin' ? { name: 'All Suppliers', path: '/all-suppliers', icon: <FaReceipt /> }:null,
   ].filter(Boolean);
 
   const toggleSidebar = () => {

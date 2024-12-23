@@ -42,6 +42,8 @@ import Notifications from './pages/Notifications/Notifications.jsx';
 import EmployeeSchedule from './components/EmployeeSchedule/EmployeeSchedule.jsx';
 import AllSchedules from './pages/Admin/AllSchedules/AllSchedules.jsx';
 import CreateAnnouncement from './pages/Admin/CreateAnnouncement/CreateAnnouncement.jsx';
+import AddSupplier from './pages/Admin/Supplier/AddSupplier/AddSupplier.jsx';
+import AllSuppliers from './pages/Admin/Supplier/AllSuppliers/AllSuppliers.jsx';
 
 
 function App() {
@@ -147,6 +149,16 @@ function App() {
     <Route path="/create-announcement" element={
     <ProtectedLayout>
     <CreateAnnouncement />
+    </ProtectedLayout>
+    } />
+      <Route path="/add-supplier" element={
+    <ProtectedLayout>
+    <AddSupplier />
+    </ProtectedLayout>
+    } />
+        <Route path="/all-suppliers" element={
+    <ProtectedLayout>
+    <AllSuppliers />
     </ProtectedLayout>
     } />
       </Routes>

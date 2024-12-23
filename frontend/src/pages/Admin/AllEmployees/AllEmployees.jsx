@@ -207,16 +207,6 @@ if (!isAdmin) {
               </div>
               <div className="mb-6">
                 <Input
-                  label="New First Name"
-                  type='text'
-                  color="black"
-                  className="focus:!ring-0"
-                  value={newFirstName}
-                  onChange={(e) => setNewFirstName(e.target.value)}
-                />
-              </div>
-              <div className="mb-6">
-                <Input
                   label="New Last Name"
                   type='text'
                   color="black"
